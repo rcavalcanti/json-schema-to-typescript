@@ -253,19 +253,39 @@ function compile(schema, path, settings) {
     return new Compiler(schema, path, settings).toString();
 }
 exports.compile = compile;
-function compileFromFile(inputFilename) {
+function compileFromFile(inputFilename, settings) {
     return new Promise(function (resolve, reject) {
         return fs_1.readFile(inputFilename, function (err, data) {
             if (err) {
                 reject(err);
             }
             else {
-                resolve(compile(JSON.parse(data.toString()), inputFilename));
+                console.log('Generating Typescript for ' + inputFilename);
+                resolve(compile(JSON.parse(data.toString()), inputFilename, settings));
             }
         });
     });
 }
 exports.compileFromFile = compileFromFile;
+function compileFromFiles(inputFilenames, settings) {
+    // empty string in Promise to use as seed in reduce (foldLeft)
+    var seed = Promise.resolve('');
+    return inputFilenames.reduce(function (acc, currentFile, x, y) {
+        return acc.then(function (prevCompilation) {
+            return compileFromFile(currentFile, settings).then(function (thisCompilation) {
+                // interrupt compilation if current compilation fails
+                if (thisCompilation instanceof Error) {
+                    throw thisCompilation;
+                }
+                // concat previous with thisCompilation
+                if (typeof thisCompilation === 'string') {
+                    return prevCompilation + '\n' + thisCompilation;
+                }
+            });
+        });
+    }, seed);
+}
+exports.compileFromFiles = compileFromFiles;
 // TODO: pull out into a separate package
 function tryFn(fn, err) {
     try {

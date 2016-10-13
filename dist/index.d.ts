@@ -8,4 +8,6 @@ export interface Settings {
     useFullReferencePathAsName?: boolean;
 }
 export declare function compile(schema: JSONSchema, path: string | undefined, settings?: Settings): string;
-export declare function compileFromFile(inputFilename: string): Promise<string | NodeJS.ErrnoException>;
+export declare type AsyncCompilation = Promise<string | NodeJS.ErrnoException>;
+export declare function compileFromFile(inputFilename: string, settings?: Settings): AsyncCompilation;
+export declare function compileFromFiles(inputFilenames: string[], settings?: Settings): AsyncCompilation;
