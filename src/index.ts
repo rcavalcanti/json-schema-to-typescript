@@ -301,16 +301,52 @@ export function compile(
   return new Compiler(schema, path, settings).toString()
 }
 
-export function compileFromFile(inputFilename: string): Promise<string | NodeJS.ErrnoException> {
+export type AsyncCompilation = Promise<string | NodeJS.ErrnoException>
+
+export function compileFromFile(
+  inputFilename: string,
+  settings?: Settings
+): AsyncCompilation {
+
   return new Promise((resolve, reject) =>
     readFile(inputFilename, (err, data) => {
       if (err) {
         reject(err)
       } else {
-        resolve(compile(JSON.parse(data.toString()), inputFilename))
+        console.log('Generating Typescript for ' + inputFilename)
+        resolve(compile(JSON.parse(data.toString()), inputFilename, settings))
       }
     })
   )
+}
+
+export function compileFromFiles(
+  inputFilenames: string[],
+  settings?: Settings
+ ): AsyncCompilation {
+
+    // empty string in Promise to use as seed in reduce (foldLeft)
+    let seed = Promise.resolve('')
+
+    return inputFilenames.reduce<AsyncCompilation>( (acc, currentFile, x, y) => {
+      return acc.then(prevCompilation => {
+
+        return compileFromFile(currentFile, settings).then(thisCompilation => {
+              // interrupt compilation if current compilation fails
+              if (thisCompilation instanceof Error){
+                  throw thisCompilation
+              }
+
+              // concat previous with thisCompilation
+              if (typeof thisCompilation === 'string') {
+                  return prevCompilation + '\n' + thisCompilation
+              }
+            }
+          )
+        }
+      )
+    }, seed)
+
 }
 
 // TODO: pull out into a separate package
