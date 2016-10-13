@@ -329,21 +329,22 @@ export function compileFromFiles(
     let seed = Promise.resolve('')
 
     return inputFilenames.reduce<AsyncCompilation>( (acc, currentFile, x, y) => {
-        return acc.then(prevCompilation => {
-            let file = currentFile
+      return acc.then(prevCompilation => {
 
-            return compileFromFile(file, settings).then(thisCompilation => {
-                  // stop if current compilation fails
-                  if (thisCompilation instanceof Error){
-                      throw thisCompilation
-                  } else if (typeof prevCompilation === 'string' && typeof thisCompilation === 'string') {
-                     // concat previous with thisCompilation
-                      return prevCompilation + '\n' + thisCompilation
-                  }
-                }
-              )
+        return compileFromFile(currentFile, settings).then(thisCompilation => {
+              // interrupt compilation if current compilation fails
+              if (thisCompilation instanceof Error){
+                  throw thisCompilation
+              }
+
+              // concat previous with thisCompilation
+              if (typeof thisCompilation === 'string') {
+                  return prevCompilation + '\n' + thisCompilation
+              }
             }
-        )
+          )
+        }
+      )
     }, seed)
 
 }
